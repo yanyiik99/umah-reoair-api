@@ -39,4 +39,4 @@ app.register_blueprint(static_file_server, url_prefix='/static/')
 # app.register_blueprint(authors_endpoints, url_prefix='/api/v1/authors')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run()
