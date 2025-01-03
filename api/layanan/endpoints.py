@@ -1,5 +1,6 @@
 """Routes for module Layanan"""
 import os
+import uuid
 from flask import Blueprint, jsonify, request
 from helper.db_helper import get_connection
 from helper.year_operation import check_age_book, diff_year
@@ -7,6 +8,7 @@ from helper.form_validation import get_form_data
 from flask_jwt_extended import jwt_required
 from datetime import datetime
 from mysql.connector import IntegrityError
+from werkzeug.utils import secure_filename
 
 layanan_endpoints = Blueprint('layanan', __name__)
 UPLOAD_FOLDER = "img"
@@ -20,6 +22,7 @@ def read():
     select_query = """
         SELECT 
             a.id_layanan, 
+            a.id_promo, 
             a.nama, 
             a.deskripsi, 
             a.kategori, 
@@ -43,6 +46,7 @@ def read():
             benefit c ON y.id_benefit = c.id_benefit
         GROUP BY 
             a.id_layanan, 
+            a.id_promo, 
             a.nama, 
             a.deskripsi, 
             a.kategori, 
@@ -54,7 +58,6 @@ def read():
             a.img_layanan"""
     cursor.execute(select_query)
     results = cursor.fetchall()
-    cursor.close()  
     for staff in results:
         if 'allstaff' in staff and staff['allstaff']:
             staff['allstaff'] = staff['allstaff'].split(',')
@@ -65,6 +68,7 @@ def read():
             staff['benefits'] = staff['benefits'].split(',')
         else:
             staff['benefits'] = []
+    cursor.close()  
     return jsonify({"status": "OK", "datas": results}), 200
 
 @layanan_endpoints.route('/create_layanan', methods=['POST'])
@@ -79,7 +83,7 @@ def create_layanan():
     estimasi = request.form['estimasi']
     garansi = request.form['garansi']
     operasional = request.form['operasional']
-    img_layanan = "img_layanan.jpg"
+    uploaded_file = request.files['img_layanan']
 
     datenow = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     created_at = datenow
@@ -87,19 +91,25 @@ def create_layanan():
 
     connection = get_connection()
     cursor = connection.cursor()
-    insert_query = """
-        INSERT INTO layanan 
-        (id_promo, nama, deskripsi, kategori, harga, peralatan, estimasi, garansi, operasional, img_layanan, created_at, updated_at) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"""
-    insert_request = (id_promo, nama, deskripsi, kategori, harga, peralatan, estimasi, garansi, operasional, img_layanan, created_at, updated_at)
-    cursor.execute(insert_query, insert_request)
-    connection.commit()
-    cursor.close()
-    new_id = cursor.lastrowid
-    if new_id:
-        return jsonify({"status": "OK","message": "layanan Succesfully Added"}), 201
-    return jsonify({"status": "Failed", "message": "Can't Create Layanan"}), 501
 
+    if uploaded_file.filename != '':
+        file_name = f"{uuid.uuid4().hex}_{secure_filename(uploaded_file.filename)}"
+        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+        uploaded_file.save(file_path)
+        insert_query = """
+            INSERT INTO layanan 
+            (id_promo, nama, deskripsi, kategori, harga, peralatan, estimasi, garansi, operasional, img_layanan, created_at, updated_at) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"""
+        insert_request = (id_promo, nama, deskripsi, kategori, harga, peralatan, estimasi, garansi, operasional, file_path, created_at, updated_at)
+        cursor.execute(insert_query, insert_request)
+        connection.commit()
+        cursor.close()
+        new_id = cursor.lastrowid
+        if new_id:
+            return jsonify({"status": "OK","message": "layanan Succesfully Added"}), 201
+        return jsonify({"status": "Failed", "message": "Can't Create Layanan"}), 501
+
+    return jsonify({"message": "Can't upload data"}), 400
 
 @layanan_endpoints.route('/read_layanan/<id_layanan>', methods=['GET'])
 def get_layananbyid(id_layanan):
@@ -109,6 +119,7 @@ def get_layananbyid(id_layanan):
     select_query = """
         SELECT 
             a.id_layanan, 
+            a.id_promo, 
             a.nama, 
             a.deskripsi, 
             a.kategori, 
@@ -133,6 +144,7 @@ def get_layananbyid(id_layanan):
         WHERE a.id_layanan=%s
         GROUP BY
             a.id_layanan, 
+            a.id_promo, 
             a.nama, 
             a.deskripsi, 
             a.kategori, 
@@ -172,31 +184,37 @@ def edit_layanan(id_layanan):
     estimasi = request.form['estimasi']
     garansi = request.form['garansi']
     operasional = request.form['operasional']
-    img_layanan = "img_layanan.jpg"
+    uploaded_file = request.files['img_layanan']
     updated_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     connection = get_connection()
     cursor = connection.cursor()
-    update_query = """
-        UPDATE layanan SET 
-            id_promo=%s, 
-            nama=%s, 
-            deskripsi=%s, 
-            kategori=%s, 
-            harga=%s, 
-            peralatan=%s, 
-            estimasi=%s, 
-            garansi=%s, 
-            operasional=%s, 
-            img_layanan=%s, 
-            updated_at=%s
-        WHERE id_layanan=%s"""
-    update_request = (id_promo, nama, deskripsi, kategori, harga, peralatan, estimasi, garansi, operasional, img_layanan, updated_at, id_layanan)
-    cursor.execute(update_query, update_request)
-    connection.commit()
-    cursor.close()
-    return jsonify({"status": "OK", "message": "Succesfully updated", "layananid": id_layanan}), 200
+    
+    if uploaded_file.filename != '':
+        file_name = f"{uuid.uuid4().hex}_{secure_filename(uploaded_file.filename)}"
+        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+        uploaded_file.save(file_path)
+        update_query = """
+            UPDATE layanan SET 
+                id_promo=%s, 
+                nama=%s, 
+                deskripsi=%s, 
+                kategori=%s, 
+                harga=%s, 
+                peralatan=%s, 
+                estimasi=%s, 
+                garansi=%s, 
+                operasional=%s, 
+                img_layanan=%s, 
+                updated_at=%s
+            WHERE id_layanan=%s"""
+        update_request = (id_promo, nama, deskripsi, kategori, harga, peralatan, estimasi, garansi, operasional, file_path, updated_at, id_layanan)
+        cursor.execute(update_query, update_request)
+        connection.commit()
+        cursor.close()
+        return jsonify({"status": "OK", "message": "Succesfully updated", "layananid": id_layanan}), 200
 
+    return jsonify({"message": "Can't upload data"}), 400
 
 @layanan_endpoints.route('/create_benefit', methods=['POST'])
 def create_benefit():

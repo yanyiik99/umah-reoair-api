@@ -20,7 +20,7 @@ def login_admin():
 
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-    query = "SELECT * FROM user WHERE email = %s AND is_deleted = 'no'"
+    query = "SELECT * FROM users WHERE email = %s AND is_deleted = 'no'"
     request_query = (email,)
     cursor.execute(query, request_query)
     user = cursor.fetchone()
@@ -29,7 +29,7 @@ def login_admin():
     if not user or not bcrypt.check_password_hash(user.get('password'), password):
         return jsonify({"msg": "Bad email or password"}), 401
 
-    access_token = create_access_token(identity={'email': email}, additional_claims={'roles': user['role']})
+    access_token = create_access_token(identity={'email': email}, additional_claims={'roles': 'admin'})
     decoded_token = decode_token(access_token)
     expires = decoded_token['exp']
     return jsonify({"access_token": access_token, "expires_in": expires, "type": "Bearer"})
@@ -55,7 +55,7 @@ def login_member():
     if not member or not bcrypt.check_password_hash(member.get('password'), password):
         return jsonify({"msg": "Bad email or password"}), 401
 
-    access_token = create_access_token(identity={'email': email})
+    access_token = create_access_token(identity={'email': email}, additional_claims={'roles': 'member'})
     decoded_token = decode_token(access_token)
     expires = decoded_token['exp']
     return jsonify({"access_token": access_token, "expires_in": expires, "type": "Bearer"})
