@@ -13,11 +13,12 @@ UPLOAD_FOLDER = "img"
 
 
 @member_endpoints.route('/read_allmember', methods=['GET'])
+@jwt_required()
 def read():
     """Routes for module get list member"""
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-    select_query = "SELECT * FROM member"
+    select_query = "SELECT * FROM member WHERE is_deleted='no'"
     cursor.execute(select_query)
     results = cursor.fetchall()
     cursor.close()  # Close the cursor after query execution
@@ -25,11 +26,12 @@ def read():
 
 
 @member_endpoints.route('/read_member/<id_member>', methods=['GET'])
+@jwt_required()
 def get_memberbyid(id_member):
     """Routes for module get member by id"""
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-    select_query = "SELECT * FROM member where id_member=%s"
+    select_query = "SELECT * FROM member where id_member=%s AND is_deleted='no'"
     parameter_request = (id_member, )
     cursor.execute(select_query, parameter_request)
     results = cursor.fetchone()
@@ -38,6 +40,7 @@ def get_memberbyid(id_member):
 
 
 @member_endpoints.route('/edit_member/<id_member>', methods=['PUT'])
+@jwt_required()
 def edit_member(id_member):
     """Routes for module edit member"""
     nama = request.form['nama']
@@ -77,6 +80,23 @@ def upload():
         uploaded_file.save(file_path)
         return jsonify({"message": "ok", "data": "uploaded", "filename": file_name, "file_path": file_path,}), 200
     return jsonify({"err_message": "Can't upload data"}), 400
+
+
+
+@member_endpoints.route('/delete_member/<id_member>', methods=['PUT'])
+@jwt_required()
+def delete_member(id_member):
+    """Routes for module soft delete member"""
+    connection = get_connection()
+    cursor = connection.cursor()
+    delete_query = """UPDATE member SET is_deleted='yes' WHERE id_member=%s"""
+    delete_request = (id_member, )
+    cursor.execute(delete_query, delete_request)
+    connection.commit()
+    cursor.close()
+    return jsonify({"message": "Succesfully deleted", "memberid": id_member}), 200
+
+
 
 
 # @member_endpoints.route('/create', methods=['POST'])

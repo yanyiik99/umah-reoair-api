@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 from helper.db_helper import get_connection
 from helper.year_operation import check_age_book, diff_year
 from helper.form_validation import get_form_data
+from helper.avg_rating import avg_rating
 from flask_jwt_extended import jwt_required
 from datetime import datetime
 from mysql.connector import IntegrityError
@@ -304,3 +305,19 @@ def assign_skill():
     if new_id:
         return jsonify({"status": "OK","message": "Assign skill Succesfully Added"}), 201
     return jsonify({"status": "Failed", "message": "Can't Added assign skill"}), 501
+
+
+@layanan_endpoints.route('/read_rating/<id_layanan>', methods=['GET'])
+def get_rating_bylayanan(id_layanan):
+    """Routes for module get rating layanan by id layanan"""
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    select_query = """SELECT * FROM review_layanan where id_layanan=%s"""
+    parameter_request = (id_layanan, )
+    cursor.execute(select_query, parameter_request)
+    results = cursor.fetchall()
+    cursor.close()
+
+    ratings = [item["rating"] for item in results]
+    result_rating = avg_rating(ratings)
+    return jsonify({"message": "OK", "datas": results, "avg": result_rating}), 200

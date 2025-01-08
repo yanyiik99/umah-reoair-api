@@ -9,6 +9,7 @@ from api.member.endpoints import member_endpoints
 from api.staff.endpoints import staff_endpoints
 from api.layanan.endpoints import layanan_endpoints
 from api.promo.endpoints import promo_endpoints
+from api.transaksi.endpoints import transaksi_endpoints
 from api.data_protected.endpoints import protected_endpoints
 
 # from api.books.endpoints import books_endpoints
@@ -35,6 +36,7 @@ app.register_blueprint(layanan_endpoints, url_prefix='/api/v1/layanan')
 app.register_blueprint(promo_endpoints, url_prefix='/api/v1/promo')
 app.register_blueprint(static_file_server, url_prefix='/static/')
 app.register_blueprint(protected_endpoints,url_prefix='/api/v1/protected')
+app.register_blueprint(transaksi_endpoints,url_prefix='/api/v1/transaksi')
 
 # Deprect
 # app.register_blueprint(books_endpoints, url_prefix='/api/v1/books')

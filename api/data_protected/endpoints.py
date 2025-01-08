@@ -18,4 +18,5 @@ def get_data():
     roles = get_roles()
     return jsonify({"message": "OK",
                     "user_logged": current_user['email'],
+                    "id": current_user['id'],
                     "roles": roles}), 200

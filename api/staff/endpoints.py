@@ -122,6 +122,7 @@ def edit_staff(id_staff):
     return jsonify({"status": "OK", "message": "Succesfully updated", "staffid": id_staff}), 200
 
 @staff_endpoints.route('/create_skill', methods=['POST'])
+@jwt_required()
 def create_skill():
     """Routes for module Create Skill"""
     nama_skill = request.form['nama_skill']
@@ -137,6 +138,36 @@ def create_skill():
     if new_id:
         return jsonify({"status": "OK","message": "Skill Succesfully Added"}), 201
     return jsonify({"status": "Failed", "message": "Can't Added Skill"}), 501
+
+
+@staff_endpoints.route('/edit_skill/<id_skill>', methods=['PUT'])
+@jwt_required()
+def edit_skill(id_skill):
+    """Routes for module Edit Skill"""
+    nama_skill = request.form['nama_skill']
+    updated_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    connection = get_connection()
+    cursor = connection.cursor()
+    update_query = """UPDATE staff_skill SET nama_skill=%s WHERE id_skill=%s"""
+    update_request = (nama_skill, id_skill)
+    cursor.execute(update_query, update_request)
+    connection.commit()
+    cursor.close()
+    return jsonify({"status": "OK", "message": "Succesfully updated", "skill_id": id_skill}), 200
+
+
+@staff_endpoints.route('/read_skillstaff', methods=['GET'])
+@jwt_required()
+def read_skillstaff():
+    """Routes for module get skill staff"""
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    select_query = "SELECT * FROM staff_skill WHERE is_deleted='no'"
+    cursor.execute(select_query)
+    results = cursor.fetchall()
+    cursor.close() 
+    return jsonify({"message": "OK", "datas": results}), 200
 
 
 @staff_endpoints.route('/assign_skill', methods=['POST'])
@@ -184,3 +215,4 @@ def assign_staff():
         return jsonify({"message": "Duplicate entry", "details": str(e)}), 409
     except Exception as e:
         return jsonify({"message": "An error occurred", "details": str(e)}), 500
+

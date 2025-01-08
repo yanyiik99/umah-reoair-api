@@ -29,10 +29,11 @@ def login_admin():
     if not user or not bcrypt.check_password_hash(user.get('password'), password):
         return jsonify({"msg": "Bad email or password"}), 401
 
-    access_token = create_access_token(identity={'email': email}, additional_claims={'roles': 'admin'})
+    access_token = create_access_token(identity={'email': email, "id": user.get('id_user')}, additional_claims={'roles': 'admin'})
     decoded_token = decode_token(access_token)
     expires = decoded_token['exp']
-    return jsonify({"access_token": access_token, "expires_in": expires, "type": "Bearer"})
+    roles = decoded_token['roles']
+    return jsonify({"access_token": access_token, "expires_in": expires, "type": "Bearer", "role": roles})
 
 
 @auth_endpoints.route('/login', methods=['POST'])
@@ -55,10 +56,11 @@ def login_member():
     if not member or not bcrypt.check_password_hash(member.get('password'), password):
         return jsonify({"msg": "Bad email or password"}), 401
 
-    access_token = create_access_token(identity={'email': email}, additional_claims={'roles': 'member'})
+    access_token = create_access_token(identity={'email': email, 'id': member.get('id_member')}, additional_claims={'roles': 'member'})
     decoded_token = decode_token(access_token)
     expires = decoded_token['exp']
-    return jsonify({"access_token": access_token, "expires_in": expires, "type": "Bearer"})
+    roles = decoded_token['roles']
+    return jsonify({"access_token": access_token, "expires_in": expires, "type": "Bearer", "role": roles})
 
 
 @auth_endpoints.route('/register', methods=['POST'])
